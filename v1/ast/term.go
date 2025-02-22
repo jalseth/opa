@@ -21,6 +21,7 @@ import (
 	"sync"
 
 	"github.com/cespare/xxhash/v2"
+	"google.golang.org/protobuf/proto"
 
 	astJSON "github.com/open-policy-agent/opa/v1/ast/json"
 	"github.com/open-policy-agent/opa/v1/ast/location"
@@ -116,6 +117,14 @@ func InterfaceToValue(x interface{}) (Value, error) {
 			r.Insert(StringTerm(k), StringTerm(v))
 		}
 		return r, nil
+	case proto.Message:
+		return ProtoObject(x), nil
+	case []proto.Message:
+		r := util.NewPtrSlice[Term](len(x))
+		for i, msg := range x {
+			r[i].Value = ProtoObject(msg)
+		}
+		return NewArray(r...), nil
 	default:
 		ptr := util.Reference(x)
 		if err := util.RoundTrip(ptr); err != nil {
